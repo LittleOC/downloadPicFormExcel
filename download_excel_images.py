@@ -210,12 +210,8 @@ def build_tasks(xlsx_path: Path, sheet_name: Optional[str], out_root: Path, star
 
         tasks: List[DownloadTask] = []
         for r in iter_rows(ws, start_row):
-            name = sanitize_path_component(str(ws.cell(r, col_name).value or ""))
-            phone = sanitize_path_component(str(ws.cell(r, col_phone).value or ""))
-            if name == "未知" and phone == "未知":
-                continue
-
-            person_dir = out_root / f"{name}_{phone}"
+            # 通用模式：使用行号作为目录名；若你未来想按 B/C 命名，可在代码里切换逻辑
+            person_dir = out_root / f"{r}"
             for c, label in col_labels:
                 urls = split_urls(ws.cell(r, c).value)
                 valid_urls = [u for u in urls if is_http_url(u)]
@@ -223,8 +219,8 @@ def build_tasks(xlsx_path: Path, sheet_name: Optional[str], out_root: Path, star
                     tasks.append(
                         DownloadTask(
                             row=r,
-                            name=name,
-                            phone=phone,
+                            name="",
+                            phone="",
                             label=label,
                             index=i,
                             url=url,
@@ -287,11 +283,11 @@ def run_download(
         done += 1
         if res.ok:
             summary.ok += 1
-            msg = f"[OK] 行{task.row} {task.name}_{task.phone} {task.label}#{task.index} -> {res.path.name}"
+            msg = f"[OK] 行{task.row} {task.label}#{task.index} -> {res.path.name}"
         else:
             summary.failed += 1
             summary.failed_rows.add(task.row)
-            msg = f"[FAIL] 行{task.row} {task.name}_{task.phone} {task.label}#{task.index} {task.url} | {res.error}"
+            msg = f"[FAIL] 行{task.row} {task.label}#{task.index} {task.url} | {res.error}"
 
         if log_cb:
             log_cb(msg)
